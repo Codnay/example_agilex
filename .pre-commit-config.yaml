@@ -1,0 +1,38 @@
+default_install_hook_types: [pre-commit]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pycqa/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
+
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=88, --preview]
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.14.2
+    hooks:
+      - id: ruff
+        # Ignoring unused imports within __init__.py files.
+        args: [--per-file-ignores, "*__init__.py:F401", --fix]
+
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        files: neuracore/
+        args: ["--convention=google"]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.18.2"
+    hooks:
+      - id: mypy
+        files: neuracore/
+        args: ["--disallow-untyped-defs", "--ignore-missing-imports"]
+        additional_dependencies: [types-requests]        

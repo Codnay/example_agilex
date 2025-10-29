@@ -1,0 +1,3 @@
+[submodule "meta_quest_reader"]
+	path = meta_quest_reader
+	url = https://github.com/NeuracoreAI/meta_quest_reader.git
