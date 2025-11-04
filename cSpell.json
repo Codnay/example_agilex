@@ -1,0 +1,14 @@
+{
+    "ignorePaths": [
+        "cSpell.json",
+        ".*",
+        "*.Dockerfile",
+        "docker-compose.yml",
+        "requirements*.txt",
+        "*.sh",
+        ".pre-commit-config.yaml",
+        ".gitmodules",
+    ],
+    "language": "en,en-GB",
+    "words": []
+}
