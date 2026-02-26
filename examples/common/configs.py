@@ -30,8 +30,8 @@ CONTROLLER_D_CUTOFF = 0.9  # Derivative cutoff frequency
 GRIP_THRESHOLD = 0.9  # Grip value threshold to activate control
 
 # Scaling factors for translation and rotation
-TRANSLATION_SCALE = 1.0
-ROTATION_SCALE = 1.0
+TRANSLATION_SCALE = 1.5
+ROTATION_SCALE = 1.5
 
 # Thread rates (Hz)
 CONTROLLER_DATA_RATE = 50.0  # Controller input reading
