@@ -57,7 +57,7 @@ def camera_thread(data_manager: DataManager) -> None:
     except Exception as e:
         print(f"❌ Camera thread error: {e}")
         traceback.print_exc()
-        data_manager.request_shutdown()
+        # Camera is optional for teleop; don't bring down the whole system if it's missing.
     finally:
         if pipeline is not None:
             try:

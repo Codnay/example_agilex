@@ -235,10 +235,24 @@ if __name__ == "__main__":
         run=True,
     )
 
-    # Register button callbacks (after state and robot_controller are initialized)
-    quest_reader.on("button_a_pressed", on_button_a_pressed)
-    quest_reader.on("button_b_pressed", on_button_b_pressed)
-    quest_reader.on("button_rj_pressed", on_button_rj_pressed)
+    def _register_quest_callbacks(event_names: list[str], callback) -> None:
+        for event_name in event_names:
+            try:
+                quest_reader.on(event_name, callback)
+            except Exception:
+                continue
+
+    # Register button callbacks (after state and robot_controller are initialized).
+    # MetaQuestReader event names can differ across versions; register common aliases.
+    _register_quest_callbacks(
+        ["button_a_pressed", "button_a", "a_pressed"], on_button_a_pressed
+    )
+    _register_quest_callbacks(
+        ["button_b_pressed", "button_b", "b_pressed"], on_button_b_pressed
+    )
+    _register_quest_callbacks(
+        ["button_rj_pressed", "button_rj", "rj_pressed"], on_button_rj_pressed
+    )
 
     # Start data collection thread
     print("\n🎮 Starting quest reader thread...")

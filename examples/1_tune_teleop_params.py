@@ -107,6 +107,11 @@ parser.add_argument(
     default=None,
     help="Optional name for the saved teleop data file",
 )
+parser.add_argument(
+    "--no-camera",
+    action="store_true",
+    help="Disable RealSense camera thread (useful when no device is connected).",
+)
 args = parser.parse_args()
 
 print("=" * 60)
@@ -154,9 +159,18 @@ joint_state_thread_obj.start()
 print("\n🎮 Initializing Meta Quest reader...")
 quest_reader = MetaQuestReader(ip_address=args.ip_address, port=5555, run=True)
 
-# Register button callbacks (after state and robot_controller are initialized)
-quest_reader.on("button_a_pressed", on_button_a_pressed)
-quest_reader.on("button_b_pressed", on_button_b_pressed)
+def _register_quest_callbacks(event_names: list[str], callback) -> None:
+    for event_name in event_names:
+        try:
+            quest_reader.on(event_name, callback)
+        except Exception:
+            continue
+
+
+# Register button callbacks (after state and robot_controller are initialized).
+# MetaQuestReader event names can differ across versions; register common aliases.
+_register_quest_callbacks(["button_a_pressed", "button_a", "a_pressed"], on_button_a_pressed)
+_register_quest_callbacks(["button_b_pressed", "button_b", "b_pressed"], on_button_b_pressed)
 
 # Start quest reader thread
 print("\n🎮 Starting quest reader thread...")
@@ -197,11 +211,15 @@ ik_thread = threading.Thread(
 ik_thread.start()
 
 # Start camera thread (if RealSense is available)
-print("\n📷 Starting camera thread...")
-camera_thread_obj = threading.Thread(
-    target=camera_thread, args=(data_manager,), daemon=True
-)
-camera_thread_obj.start()
+camera_thread_obj = None
+if args.no_camera:
+    print("\n📷 Camera thread disabled (--no-camera)")
+else:
+    print("\n📷 Starting camera thread...")
+    camera_thread_obj = threading.Thread(
+        target=camera_thread, args=(data_manager,), daemon=True
+    )
+    camera_thread_obj.start()
 
 
 # Set up visualizer
@@ -396,6 +414,8 @@ quest_thread.join()
 quest_reader.stop()
 ik_thread.join()
 joint_state_thread_obj.join()
+if camera_thread_obj is not None:
+    camera_thread_obj.join()
 robot_controller.cleanup()
 visualizer.stop()
 

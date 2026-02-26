@@ -866,12 +866,20 @@ if __name__ == "__main__":
     )
 
     # Register Quest reader button callbacks (after visualizer is created)
-    quest_reader.on(
-        "button_a_pressed",
+    def _register_quest_callbacks(event_names: list[str], callback) -> None:
+        for event_name in event_names:
+            try:
+                quest_reader.on(event_name, callback)
+            except Exception:
+                continue
+
+    _register_quest_callbacks(
+        ["button_a_pressed", "button_a", "a_pressed"],
         lambda: toggle_robot_enabled_status(data_manager, robot_controller, visualizer),
     )
-    quest_reader.on(
-        "button_b_pressed", lambda: home_robot(data_manager, robot_controller)
+    _register_quest_callbacks(
+        ["button_b_pressed", "button_b", "b_pressed"],
+        lambda: home_robot(data_manager, robot_controller),
     )
 
     # Start policy execution thread

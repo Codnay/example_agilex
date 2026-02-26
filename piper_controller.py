@@ -186,25 +186,67 @@ class PiperController:
             )
         )
 
-        self._enable_robot()
+        if not self._enable_robot(timeout_s=10.0):
+            raise RuntimeError(
+                "Failed to enable Piper robot during initialization. "
+                "Check CAN interface connectivity, E-Stop state, and robot power."
+            )
 
         print("✓ Robot initialized successfully!")
 
-    def _enable_robot(self) -> None:
-        """Enable the robot."""
-        while not self.piper.EnablePiper():
-            time.sleep(0.01)
+    def _enable_robot(self, timeout_s: float = 5.0) -> bool:
+        """Enable the robot.
+
+        Args:
+            timeout_s: Maximum time to wait for enable to succeed.
+
+        Returns:
+            True if enabled, False on timeout or error.
+        """
+        if not hasattr(self, "piper") or self.piper is None:
+            return False
+
+        start_time = time.time()
+        try:
+            while True:
+                if self.piper.EnablePiper():
+                    break
+                if time.time() - start_time > timeout_s:
+                    return False
+                time.sleep(0.01)
+        except Exception:
+            return False
 
         self._set_robot_status_enabled(True)
         print("✓ Robot enabled successfully!")
+        return True
 
-    def _disable_robot(self) -> None:
-        """Disable the robot."""
-        while self.piper.DisablePiper():
-            time.sleep(0.01)
+    def _disable_robot(self, timeout_s: float = 5.0) -> bool:
+        """Disable the robot.
+
+        Args:
+            timeout_s: Maximum time to wait for disable to succeed.
+
+        Returns:
+            True if disabled, False on timeout or error.
+        """
+        if not hasattr(self, "piper") or self.piper is None:
+            return False
+
+        start_time = time.time()
+        try:
+            while True:
+                if self.piper.DisablePiper():
+                    break
+                if time.time() - start_time > timeout_s:
+                    return False
+                time.sleep(0.01)
+        except Exception:
+            return False
 
         self._set_robot_status_enabled(False)
         print("✓ Robot disabled successfully!")
+        return True
 
     def get_control_mode(self) -> "PiperController.ControlMode":
         """Get the current control mode.
@@ -428,13 +470,9 @@ class PiperController:
         """Move robot to home position based on current control mode."""
         try:
             # Ensure robot is enabled
-            enable_start_time = time.time()
-            while not self.piper.EnablePiper():
-                if time.time() - enable_start_time > 2:
-                    print("Enable timeout. Attempting graceful stop...")
-                    self.graceful_stop()
-                    enable_start_time = time.time()
-                time.sleep(0.01)
+            if not self._enable_robot(timeout_s=2.0):
+                print("✗ Failed to enable robot before homing")
+                return False
 
             current_mode = self.get_control_mode()
             with self.position_lock:
@@ -564,7 +602,9 @@ class PiperController:
             self.piper.GripperCtrl(0, 0, 0x00, 0)
 
             # Disable robot hardware
-            self._disable_robot()
+            if not self._disable_robot(timeout_s=5.0):
+                print("✗ Timed out disabling robot during emergency stop")
+                return False
 
             print("✓ Emergency stop completed")
             return True
@@ -595,7 +635,9 @@ class PiperController:
             self.piper.MotionCtrl_1(0x02, 0, 0)
 
             print("Disabling robot...")
-            self._disable_robot()
+            if not self._disable_robot(timeout_s=5.0):
+                print("✗ Timed out disabling robot")
+                return False
 
             print("✓ Graceful stop completed")
             return True
@@ -621,7 +663,9 @@ class PiperController:
             print("🔄 Resuming robot...")
 
             # Re-enable the robot
-            self._enable_robot()
+            if not self._enable_robot(timeout_s=5.0):
+                print("✗ Timed out enabling robot")
+                return False
 
             # After enabling, align controller targets to current measured state
             # to avoid any sudden jumps to stale targets
